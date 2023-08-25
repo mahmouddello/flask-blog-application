@@ -43,8 +43,20 @@ def admin_only(f):
     return decorated_function
 
 
+def not_logged_in(f):
+    """This decorator prevents logged-in user from accessing login and register routes."""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.is_authenticated:
+            return redirect(url_for("get_all_posts"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///posts.db")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -91,6 +103,7 @@ with app.app_context():
 
 
 @app.route('/register', methods=["GET", "POST"])
+@not_logged_in
 def register():
     """Registration is done under this route. This function handles all registration operation."""
     register_form = RegisterForm()
@@ -119,6 +132,7 @@ def register():
 
 
 @app.route('/login', methods=["GET", "POST"])
+@not_logged_in
 def login():
     """Responsible about the functionality of the login operation."""
     login_form = LoginForm()
@@ -180,7 +194,8 @@ def show_post(post_id):
                            form=comment_form,
                            current_user=current_user,
                            comment_list=post_comments,
-                           user=User)
+                           user=User,
+                           logged_in=current_user.is_authenticated)
 
 
 @app.route("/new-post", methods=["GET", "POST"])
@@ -233,6 +248,11 @@ def edit_post(post_id):
 def delete_post(post_id):
     """Only Admin can create an edit a post, the functionality of the project was build about this scenario."""
     post_to_delete = db.get_or_404(BlogPost, post_id)
+    comments_on_post = Comment.query.filter_by(post_id=post_id).all()
+    # posts contain comments, so we need to delete comments to be able to delete a post because of the relationships.
+    for comment in comments_on_post:
+        db.session.delete(comment)
+        db.session.commit()
     db.session.delete(post_to_delete)
     db.session.commit()
     return redirect(url_for('get_all_posts'))
