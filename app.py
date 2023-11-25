@@ -8,9 +8,12 @@ from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
+from dotenv import load_dotenv
+
+load_dotenv("./.env")
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("FLASK_KEY")
+app.config['SECRET_KEY'] = os.getenv("FLASK_KEY")
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
@@ -56,7 +59,7 @@ def not_logged_in(f):
 
 
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -102,6 +105,17 @@ with app.app_context():
     db.create_all()
 
 
+@app.route('/')
+def get_all_posts():
+    """Home route, this function renders the 'index.html' template."""
+    result = db.session.execute(db.select(BlogPost))
+    posts = result.scalars().all()
+    return render_template("index.html",
+                           all_posts=posts,
+                           logged_in=current_user.is_authenticated,
+                           year=year)
+
+
 @app.route('/register', methods=["GET", "POST"])
 @not_logged_in
 def register():
@@ -115,7 +129,7 @@ def register():
         if user_exist:  # if true
             flash("User Already Exists. Try Logging In")
         else:
-            # create new user object to add it to the database
+            # create a new user object to add it to the database
             new_user = User(
                 email=email,
                 password=generate_password_hash(password=password, method="pbkdf2:sha256", salt_length=8),
@@ -158,17 +172,6 @@ def logout():
     """Handles logout operation by clearing the current session."""
     logout_user()
     return redirect(url_for('get_all_posts'))
-
-
-@app.route('/')
-def get_all_posts():
-    """Home route, this function renders the 'index.html' template."""
-    result = db.session.execute(db.select(BlogPost))
-    posts = result.scalars().all()
-    return render_template("index.html",
-                           all_posts=posts,
-                           logged_in=current_user.is_authenticated,
-                           year=year)
 
 
 @app.route("/post/<int:post_id>", methods=["GET", "POST"])
