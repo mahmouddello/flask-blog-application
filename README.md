@@ -1,7 +1,5 @@
 # flask-blog-application
-A blog built with flask, the blog template created by [startbootstrap](https://startbootstrap.com/) and [available here](https://startbootstrap.com/theme/clean-blog) to download and modify.
-## Demo
-You can preview blog behaviour from the [live demo here](https://flask-blog-xj62.onrender.com/)
+A blog built with flask, the blog template created by [startbootstrap](https://github.com/StartBootstrap) and [available here](https://startbootstrap.com/theme/clean-blog) to download and modify.
 ## Project Capabilities Overview
 * Login with your account, register for a new account.
 * Create new posts (as an admin).
