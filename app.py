@@ -1,16 +1,22 @@
+import logging
 import os
+import smtplib
 from datetime import date
+from functools import wraps
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
+from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, session
 from flask_bootstrap import Bootstrap5
 from flask_ckeditor import CKEditor
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
-from functools import wraps
-from werkzeug.security import generate_password_hash, check_password_hash
-from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
-from dotenv import load_dotenv
 
 load_dotenv("./.env")
+
+MY_EMAIL = os.getenv("MY_EMAIL")
+MY_PASS = os.getenv("MY_PASS")
+RECEIVE_EMAIL = os.getenv("RECEIVE_EMAIL")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("FLASK_KEY")
@@ -266,9 +272,55 @@ def about():
     return render_template("about.html", logged_in=current_user.is_authenticated)
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    # Implement the functionality of contact on your own, the button is disabled.
+    if request.method == "POST":
+        form = request.form
+        sender_name = form["name"]
+        sender_email = form["email"]
+        sender_phone_number = form["phone"]
+        sender_message = form["message"]
+
+        # Email content
+        email_subject = "New message from your blog contact form"
+        email_body = f"""
+            Hi {sender_name},\n
+            Thank you for reaching out through our contact form. Here is the message we received:\n
+            Name: {sender_name}\n
+            Email: {sender_email}\n
+            Phone number: {sender_phone_number}\n
+            Message: {sender_message}\n
+            We will get back to you shortly.
+        """
+
+        # Create email headers
+        email_message = f"Subject: {email_subject}\n\n{email_body}"
+
+        # Send the email via SMTP
+        with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
+            connection.starttls()  # Encrypts the email
+            try:
+                connection.login(user=MY_EMAIL, password=MY_PASS)
+            except smtplib.SMTPAuthenticationError:
+                app.logger.warning("Couldn't get access to the gmail account!")
+                return render_template(
+                    template_name_or_list="contact.html",
+                    logged_in=current_user.is_authenticated,
+                    msg_sent=False
+                )
+            else:
+                connection.sendmail(
+                    from_addr=MY_EMAIL,
+                    to_addrs=RECEIVE_EMAIL,
+                    msg=email_message
+                )
+
+                return render_template(
+                    template_name_or_list="contact.html",
+                    logged_in=current_user.is_authenticated,
+                    msg_sent=True
+                )
+
     return render_template("contact.html", logged_in=current_user.is_authenticated)
 
 

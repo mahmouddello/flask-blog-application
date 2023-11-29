@@ -9,7 +9,7 @@
         <div class="row gx-4 gx-lg-5 justify-content-center">
             <div class="col-md-10 col-lg-8 col-xl-7">
                 <div class="page-heading">
-                    {% if msg_sent: %}
+                    {% if msg_sent %}
                         <h1>Successfully sent your message</h1>
                     {% else: %}
                         <h1>Contact Me</h1>
@@ -37,6 +37,7 @@
                             name="sentMessage"
                             action="{{ url_for('contact') }}"
                             method="post"
+
                     >
                         <div class="form-floating">
                             <input
@@ -87,7 +88,6 @@
                                 class="btn btn-danger text-uppercase"
                                 id="submitButton"
                                 type="submit"
-                                disabled
                         >
                             Send your message
                         </button>
