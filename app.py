@@ -1,4 +1,3 @@
-import logging
 import os
 import smtplib
 from datetime import date
